@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能单词记忆卡片</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .setup-section {
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            margin: 40px auto;
+            max-width: 600px;
+        }
+
+        .setup-section h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+
+        .instructions {
+            text-align: left;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .instructions h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .instructions ul {
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin: 8px 0;
+            color: #555;
+        }
+
+        .textarea-container {
+            margin: 20px 0;
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            resize: vertical;
+            font-family: monospace;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .start-button {
+            margin-top: 20px;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .start-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .main-content {
+            display: none;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .completion-info {
+            font-size: 1.2em;
+            color: #7f8c8d;
+            margin-top: 10px;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card-wrapper {
+            height: 200px;
+            position: relative; /* 关键修改：添加相对定位 */
+            transition: all 0.3s ease;
+        }
+
+        .card {
+            height: 100%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            background: white;
+        }
+
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            border-radius: 15px;
+        }
+
+        .card-front {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .card-back {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            transform: rotateY(180deg);
+        }
+
+        .speaker-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 1.5em;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .speaker-icon:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .word-text {
+            font-size: 1.8em;
+            font-weight: bold;
+            word-break: break-word;
+            line-height: 1.4;
+        }
+
+        .card-front .word-text {
+            color: white;
+        }
+
+        .card-back .word-text {
+            color: white;
+        }
+
+        .checkbox-container {
+            position: absolute;
+            bottom: 10px; /* 确保在卡片底部 */
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            padding: 5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9em;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .checkbox-item label {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .completion-message {
+            text-align: center;
+            font-size: 2em;
+            color: #27ae60;
+            margin: 40px 0;
+            animation: celebrate 1s ease-in-out infinite alternate;
+        }
+
+        @keyframes celebrate {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+
+        .reset-button {
+            display: block;
+            margin: 0 auto;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .reset-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .hidden-cards-counter {
+            text-align: center;
+            font-size: 1.1em;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+
+        .back-to-setup {
+            display: inline-block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background: #95a5a6;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .back-to-setup:hover {
+            background: #7f8c8d;
+        }
+
+        @media (max-width: 768px) {
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .word-text {
+                font-size: 1.5em;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .setup-section {
+                margin: 20px;
+                padding: 20px;
+            }
+        }
+    </style>
+    <script>
+        // 全局变量
+        let words = [];
+        let completionCount = 0;
+
+        function startWithWords() {
+            const input = document.getElementById('wordInput');
+            if (!input) {
+                console.error('找不到单词输入框元素');
+                return;
+            }
+            
+            const inputValue = input.value.trim();
+            if (!inputValue) {
+                alert('请输入单词列表！');
+                return;
+            }
+            
+            words = inputValue.split('\n')
+                .map(line => line.trim())
+                .filter(line => line.includes('/'))
+                .map(line => line.trim());
+            
+            if (words.length === 0) {
+                alert('请按照格式输入单词列表：英文 / 中文');
+                return;
+            }
+            
+            for (const wordLine of words) {
+                const parts = wordLine.split(' / ');
+                if (parts.length !== 2) {
+                    alert(`格式错误：${wordLine}\n请确保每行都是“英文 / 中文”的格式`);
+                    return;
+                }
+            }
+            
+            const setupSection = document.getElementById('setupSection');
+            const mainContent = document.getElementById('mainContent');
+            
+            if (setupSection) setupSection.style.display = 'none';
+            if (mainContent) mainContent.style.display = 'block';
+            
+            init();
+        }
+
+        function goToSetup() {
+            if (confirm('确定要返回并更换单词列表吗？当前的学习进度将会丢失。')) {
+                const mainContent = document.getElementById('mainContent');
+                const setupSection = document.getElementById('setupSection');
+                
+                if (mainContent) mainContent.style.display = 'none';
+                if (setupSection) setupSection.style.display = 'block';
+                
+                words = [];
+            }
+        }
+
+        function resetAll() {
+            for (let i = 0; i < words.length; i++) {
+                localStorage.removeItem(`word_${i}_pronunciation`);
+                localStorage.removeItem(`word_${i}_definition`);
+            }
+            localStorage.removeItem('wordCardCompletionCount');
+            
+            completionCount = 0;
+            updateCompletionInfo();
+            renderCards();
+            checkCompletionStatus();
+        }
+
+        function init() {
+            loadCompletionCount();
+            updateCompletionInfo();
+            renderCards();
+            checkCompletionStatus();
+        }
+
+        function loadCompletionCount() {
+            const count = localStorage.getItem('wordCardCompletionCount');
+            completionCount = count ? parseInt(count) : 0;
+        }
+
+        function updateCompletionInfo() {
+            const completionInfoElement = document.getElementById('completionInfo');
+            if (completionInfoElement) {
+                completionInfoElement.textContent = `恭喜你第 ${completionCount} 次完成单词背诵~`;
+            }
+        }
+
+        function renderCards() {
+            const cardGrid = document.getElementById('cardGrid');
+            if (!cardGrid) {
+                console.error('找不到卡片网格容器');
+                return;
+            }
+            
+            cardGrid.innerHTML = '';
+
+            words.forEach((wordPair, index) => {
+                const [english, chinese] = wordPair.split(' / ').map(s => s.trim());
+                
+                // 检查是否已经完成（两个复选框都勾选）
+                const pronunciationChecked = getSavedState(index, 'pronunciation');
+                const definitionChecked = getSavedState(index, 'definition');
+                
+                if (pronunciationChecked && definitionChecked) {
+                    // 已完成，跳过渲染
+                    return;
+                }
+                
+                // 创建卡片包装器（关键：已添加position: relative）
+                const cardWrapper = document.createElement('div');
+                cardWrapper.className = 'card-wrapper';
+                cardWrapper.id = `wrapper-${index}`;
+                
+                // 创建卡片主体
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'card';
+                cardDiv.id = `card-${index}`;
+                
+                const cardInner = document.createElement('div');
+                cardInner.className = 'card-inner';
+                
+                // 前面 - 英文
+                const cardFront = document.createElement('div');
+                cardFront.className = 'card-front';
+                
+                const speakerIcon = document.createElement('div');
+                speakerIcon.className = 'speaker-icon';
+                speakerIcon.innerHTML = '🔊';
+                speakerIcon.onclick = (e) => {
+                    e.stopPropagation();
+                    speakWord(english);
+                };
+                
+                const englishText = document.createElement('div');
+                englishText.className = 'word-text';
+                englishText.textContent = english;
+                
+                cardFront.appendChild(speakerIcon);
+                cardFront.appendChild(englishText);
+                
+                // 后面 - 中文
+                const cardBack = document.createElement('div');
+                cardBack.className = 'card-back';
+                
+                const backSpeakerIcon = document.createElement('div');
+                backSpeakerIcon.className = 'speaker-icon';
+                backSpeakerIcon.innerHTML = '🔊';
+                backSpeakerIcon.onclick = (e) => {
+                    e.stopPropagation();
+                    speakWord(english);
+                };
+                
+                const chineseText = document.createElement('div');
+                chineseText.className = 'word-text';
+                chineseText.textContent = chinese;
+                
+                cardBack.appendChild(backSpeakerIcon);
+                cardBack.appendChild(chineseText);
+                
+                // 创建复选框容器（现在在卡片包装器中，不会随卡片翻转）
+                const checkboxContainer = document.createElement('div');
+                checkboxContainer.className = 'checkbox-container';
+                
+                // 发音复选框
+                const pronunciationBox = document.createElement('div');
+                pronunciationBox.className = 'checkbox-item';
+                
+                const pronunciationCheckbox = document.createElement('input');
+                pronunciationCheckbox.type = 'checkbox';
+                pronunciationCheckbox.id = `pronunciation-${index}`;
+                pronunciationCheckbox.dataset.index = index;
+                pronunciationCheckbox.dataset.type = 'pronunciation';
+                pronunciationCheckbox.checked = getSavedState(index, 'pronunciation');
+                
+                pronunciationCheckbox.onchange = function(e) {
+                    e.stopPropagation();
+                    saveState(index, 'pronunciation', this.checked);
+                    updateCardVisibility(index);
+                    checkCompletionStatus();
+                    updateHiddenCardsCounter();
+                };
+                
+                const pronunciationLabel = document.createElement('label');
+                pronunciationLabel.htmlFor = `pronunciation-${index}`;
+                pronunciationLabel.textContent = '发音';
+                
+                pronunciationBox.appendChild(pronunciationCheckbox);
+                pronunciationBox.appendChild(pronunciationLabel);
+                
+                // 释义复选框
+                const definitionBox = document.createElement('div');
+                definitionBox.className = 'checkbox-item';
+                
+                const definitionCheckbox = document.createElement('input');
+                definitionCheckbox.type = 'checkbox';
+                definitionCheckbox.id = `definition-${index}`;
+                definitionCheckbox.dataset.index = index;
+                definitionCheckbox.dataset.type = 'definition';
+                definitionCheckbox.checked = getSavedState(index, 'definition');
+                
+                definitionCheckbox.onchange = function(e) {
+                    e.stopPropagation();
+                    saveState(index, 'definition', this.checked);
+                    updateCardVisibility(index);
+                    checkCompletionStatus();
+                    updateHiddenCardsCounter();
+                };
+                
+                const definitionLabel = document.createElement('label');
+                definitionLabel.htmlFor = `definition-${index}`;
+                definitionLabel.textContent = '释义';
+                
+                definitionBox.appendChild(definitionCheckbox);
+                definitionBox.appendChild(definitionLabel);
+                
+                checkboxContainer.appendChild(pronunciationBox);
+                checkboxContainer.appendChild(definitionBox);
+                
+                // 将卡片主体添加到包装器
+                cardInner.appendChild(cardFront);
+                cardInner.appendChild(cardBack);
+                cardDiv.appendChild(cardInner);
+                
+                // 将卡片和复选框容器添加到包装器
+                cardWrapper.appendChild(cardDiv);
+                cardWrapper.appendChild(checkboxContainer);
+                
+                // 点击卡片主体区域翻转
+                cardDiv.onclick = (e) => {
+                    if (e.target.tagName === 'INPUT' || 
+                        e.target.tagName === 'LABEL' || 
+                        e.target.classList.contains('speaker-icon') ||
+                        e.target.closest('.speaker-icon')) {
+                        return;
+                    }
+                    cardDiv.classList.toggle('flipped');
+                };
+                
+                cardGrid.appendChild(cardWrapper);
+            });
+            
+            updateHiddenCardsCounter();
+        }
+
+        function getSavedState(index, type) {
+            const key = `word_${index}_${type}`;
+            const value = localStorage.getItem(key);
+            return value === 'true';
+        }
+
+        function saveState(index, type, checked) {
+            const key = `word_${index}_${type}`;
+            localStorage.setItem(key, checked.toString());
+        }
+
+        function updateCardVisibility(index) {
+            const wrapper = document.getElementById(`wrapper-${index}`);
+            if (!wrapper) return;
+            
+            const pronunciationChecked = getSavedState(index, 'pronunciation');
+            const definitionChecked = getSavedState(index, 'definition');
+            
+            if (pronunciationChecked && definitionChecked) {
+                // 当两个复选框都勾选时，移除卡片
+                wrapper.remove();
+            }
+        }
+
+        function checkCompletionStatus() {
+            let allCompleted = true;
+            for (let i = 0; i < words.length; i++) {
+                const pronunciationChecked = getSavedState(i, 'pronunciation');
+                const definitionChecked = getSavedState(i, 'definition');
+                
+                if (!pronunciationChecked || !definitionChecked) {
+                    allCompleted = false;
+                    break;
+                }
+            }
+            
+            const completionSection = document.getElementById('completionSection');
+            if (completionSection) {
+                if (allCompleted) {
+                    completionSection.style.display = 'block';
+                } else {
+                    completionSection.style.display = 'none';
+                }
+            }
+        }
+
+        function updateHiddenCardsCounter() {
+            let hiddenCount = 0;
+            for (let i = 0; i < words.length; i++) {
+                const pronunciationChecked = getSavedState(i, 'pronunciation');
+                const definitionChecked = getSavedState(i, 'definition');
+                
+                if (pronunciationChecked && definitionChecked) {
+                    hiddenCount++;
+                }
+            }
+            
+            const hiddenCountElement = document.getElementById('hiddenCount');
+            const totalCountElement = document.getElementById('totalCount');
+            
+            if (hiddenCountElement && totalCountElement) {
+                hiddenCountElement.textContent = hiddenCount;
+                totalCountElement.textContent = words.length;
+            }
+        }
+
+        function speakWord(text) {
+            if ('speechSynthesis' in window) {
+                speechSynthesis.cancel();
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.8;
+                utterance.pitch = 1.0;
+                utterance.volume = 1.0;
+                
+                utterance.onerror = function(event) {
+                    console.error('语音合成失败:', event);
+                    alert('发音功能暂时不可用，请稍后再试');
+                };
+                
+                speechSynthesis.speak(utterance);
+            } else {
+                alert('您的浏览器不支持语音合成功能');
+            }
+        }
+
+        // 确保DOM完全加载后再初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 确保全局变量正确初始化
+            if (typeof words === 'undefined') {
+                words = [];
+            }
+            if (typeof completionCount === 'undefined') {
+                completionCount = 0;
+            }
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <!-- 设置页面 -->
+        <div id="setupSection" class="setup-section">
+            <h1>📚 智能单词记忆卡片</h1>
+            <div class="instructions">
+                <h3>使用说明：</h3>
+                <ul>
+                    <li>请按照格式粘贴单词列表：英文 / 中文</li>
+                    <li>每行一个单词，用斜杠 "/" 分隔英文和中文</li>
+                    <li>例如：<br>hello / 你好<br>world / 世界</li>
+                </ul>
+            </div>
+            <div class="textarea-container">
+                <textarea id="wordInput" placeholder="请在此粘贴您的单词列表，格式：英文 / 中文&#10;例如：&#10;hello / 你好&#10;world / 世界"></textarea>
+            </div>
+            <button class="start-button" onclick="startWithWords()">开始学习</button>
+        </div>
+        
+        <!-- 主学习页面 -->
+        <div id="mainContent" class="main-content">
+            <div class="header">
+                <h1>📚 智能单词记忆卡片</h1>
+                <div class="completion-info" id="completionInfo">欢迎开始单词学习！</div>
+                <button class="back-to-setup" onclick="goToSetup()">更换单词列表</button>
+            </div>
+            
+            <div class="hidden-cards-counter" id="hiddenCardsCounter">
+                已掌握: <span id="hiddenCount">0</span>/<span id="totalCount">0</span>
+            </div>
+            
+            <div class="card-grid" id="cardGrid"></div>
+            
+            <div id="completionSection" style="display: none;">
+                <div class="completion-message">🎉 恭
